@@ -1,29 +1,32 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from sklearn.linear_model import LinearRegression
-import numpy as np
 
 st.set_page_config(page_title="SpendWise", layout="wide")
 st.title("📊 SpendWise: Personal Finance Predictor")
 
-# Sidebar for adding data
+# 1. Initialize an EMPTY storage (No default values)
+if 'my_data' not in st.session_state:
+    st.session_state.my_data = pd.DataFrame(columns=['Category', 'Amount'])
+
+# 2. Sidebar for adding data
 st.sidebar.header("Add New Expense")
-add_date = st.sidebar.date_input("Date")
 add_cat = st.sidebar.selectbox("Category", ["Food", "Transport", "Rent", "Shopping", "Bills"])
-add_amt = st.sidebar.number_input("Amount", min_value=0)
+add_amt = st.sidebar.number_input("Amount", min_value=0, step=100)
 
 if st.sidebar.button("Add Expense"):
-    st.sidebar.success(f"Added ₹{add_amt} to {add_cat}")
+    new_row = pd.DataFrame({'Category': [add_cat], 'Amount': [add_amt]})
+    st.session_state.my_data = pd.concat([st.session_state.my_data, new_row], ignore_index=True)
+    st.sidebar.success(f"Added ₹{add_amt}!")
 
-# Main Dashboard
+# 3. Main Dashboard
 st.write("### Expense Overview")
-st.info("This is your live capstone project dashboard. Once you upload data, charts will appear here!")
 
-# Sample Chart (to show it works)
-chart_data = pd.DataFrame({
-    'Category': ["Food", "Transport", "Rent", "Shopping", "Bills"],
-    'Amount': [2000, 1500, 5000, 3000, 1200]
-})
-fig = px.pie(chart_data, values='Amount', names='Category', title="Sample Spending Distribution")
-st.plotly_chart(fig)
+if st.session_state.my_data.empty:
+    st.info("Your dashboard is currently empty. Add an expense in the sidebar to see the chart!")
+else:
+    # This chart ONLY appears once you add data
+    fig = px.pie(st.session_state.my_data, values='Amount', names='Category', title="My Real-Time Spending")
+    st.plotly_chart(fig, use_container_width=True)
+    st.table(st.session_state.my_data)
+    
