@@ -1,32 +1,51 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import os
 
 st.set_page_config(page_title="SpendWise", layout="wide")
-st.title("📊 SpendWise: Personal Finance Predictor")
+st.title("📊 SpendWise: Permanent Tracker")
 
-# 1. Initialize an EMPTY storage (No default values)
-if 'my_data' not in st.session_state:
-    st.session_state.my_data = pd.DataFrame(columns=['Category', 'Amount'])
+# --- DATABASE LOGIC ---
+DATA_FILE = "expenses.csv"
 
-# 2. Sidebar for adding data
-st.sidebar.header("Add New Expense")
-add_cat = st.sidebar.selectbox("Category", ["Food", "Transport", "Rent", "Shopping", "Bills"])
-add_amt = st.sidebar.number_input("Amount", min_value=0, step=100)
+# Function to load data from the CSV file
+def load_data():
+    if os.path.exists(DATA_FILE):
+        return pd.read_csv(DATA_FILE)
+    return pd.DataFrame(columns=['Date', 'Category', 'Amount'])
 
-if st.sidebar.button("Add Expense"):
-    new_row = pd.DataFrame({'Category': [add_cat], 'Amount': [add_amt]})
-    st.session_state.my_data = pd.concat([st.session_state.my_data, new_row], ignore_index=True)
-    st.sidebar.success(f"Added ₹{add_amt}!")
+# Load the current data
+df = load_data()
 
-# 3. Main Dashboard
+# --- SIDEBAR ---
+st.sidebar.header("Log Daily Expense")
+# 1. Added Date Wise Input
+add_date = st.sidebar.date_input("Select Date")
+add_cat = st.sidebar.selectbox("Category", ["Food", "Transport", "Rent", "Shopping", "Bills", "Other"])
+add_amt = st.sidebar.number_input("Amount (₹)", min_value=0, step=50)
+
+if st.sidebar.button("Save Permanently"):
+    # Create new entry
+    new_entry = pd.DataFrame([[add_date, add_cat, add_amt]], columns=['Date', 'Category', 'Amount'])
+    # Combine with old data
+    df = pd.concat([df, new_entry], ignore_index=True)
+    # Save back to CSV file
+    df.to_csv(DATA_FILE, index=False)
+    st.sidebar.success(f"Saved for {add_date}!")
+    st.rerun()
+
+# --- DASHBOARD ---
 st.write("### Expense Overview")
 
-if st.session_state.my_data.empty:
-    st.info("Your dashboard is currently empty. Add an expense in the sidebar to see the chart!")
+if df.empty:
+    st.info("No data found. Add your first expense in the sidebar!")
 else:
-    # This chart ONLY appears once you add data
-    fig = px.pie(st.session_state.my_data, values='Amount', names='Category', title="My Real-Time Spending")
+    # Show Date-wise table
+    st.write("#### Detailed Transaction Table")
+    st.dataframe(df.sort_values(by='Date', ascending=False), use_container_width=True)
+
+    # Pie Chart based on Categories
+    fig = px.pie(df, values='Amount', names='Category', title="Total Spending by Category")
     st.plotly_chart(fig, use_container_width=True)
-    st.table(st.session_state.my_data)
     
