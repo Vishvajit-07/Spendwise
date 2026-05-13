@@ -48,4 +48,4 @@ else:
     # Pie Chart based on Categories
     fig = px.pie(df, values='Amount', names='Category', title="Total Spending by Category")
     st.plotly_chart(fig, use_container_width=True)
-    
+
